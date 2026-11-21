@@ -1,11 +1,12 @@
 {
     "menu": [
         {
-            "type": "pages",
+            "type": "list",
             "headline": "KIRITO PLAYER",
-            "pages": [
+            "items": [
                 {
-                    "title": "Abrir App",
+                    "type": "button",
+                    "label": "Abrir KIRITO PLAYER",
                     "icon": "https://img.icons8.com/color/256/play.png",
                     "action": "link:https://kiritotv-cmyk.github.io/KIRITO-PLAYER/"
                 }
