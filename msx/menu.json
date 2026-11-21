@@ -1,0 +1,15 @@
+{
+    "menu": [
+        {
+            "type": "list",
+            "headline": "KIRITO PLAYER",
+            "items": [
+                {
+                    "type": "button",
+                    "label": "TV ao Vivo",
+                    "action": "content:https://kiritotv-cmyk.github.io/KIRITO-PLAYER/msx/tv.json"
+                }
+            ]
+        }
+    ]
+}
