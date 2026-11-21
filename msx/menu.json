@@ -1,13 +1,13 @@
 {
     "menu": [
         {
-            "type": "list",
+            "type": "pages",
             "headline": "KIRITO PLAYER",
-            "items": [
+            "pages": [
                 {
-                    "type": "button",
-                    "label": "TV ao Vivo",
-                    "action": "content:https://kiritotv-cmyk.github.io/KIRITO-PLAYER/msx/tv.json"
+                    "title": "Abrir App",
+                    "icon": "https://img.icons8.com/color/256/play.png",
+                    "action": "link:https://kiritotv-cmyk.github.io/KIRITO-PLAYER/"
                 }
             ]
         }
