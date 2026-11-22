@@ -1,16 +1,15 @@
 {
-    "menu": [
+  "menu": [
+    {
+      "type": "list",
+      "headline": "KIRITO PLAYER",
+      "items": [
         {
-            "type": "list",
-            "headline": "KIRITO PLAYER",
-            "items": [
-                {
-                    "type": "button",
-                    "label": "Abrir KIRITO PLAYER",
-                    "icon": "https://img.icons8.com/color/256/play.png",
-                    "action": "link:https://kiritotv-cmyk.github.io/KIRITO-PLAYER/"
-                }
-            ]
+          "type": "button",
+          "label": "ABRIR KIRITO PLAYER",
+          "data": "https://kiritotv-cmyk.github.io/KIRITO-PLAYER/"
         }
-    ]
+      ]
+    }
+  ]
 }
