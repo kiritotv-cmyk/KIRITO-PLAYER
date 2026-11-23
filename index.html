@@ -1,400 +1,70 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KIRITO PLAYER</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <style>
-        :root {
-            --bg-color: #000000;
-            --neon-blue: #00f3ff;
-            --panel-bg: #0a0a0a;
-            --text-color: #ffffff;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
-        
-        /* TELA DE LOGIN */
-        #login-screen {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            height: 100vh; background: radial-gradient(circle at center, #001f24 0%, #000000 100%);
-        }
-        .logo { font-size: 2.5rem; font-weight: bold; color: var(--text-color); text-shadow: 0 0 10px var(--neon-blue); margin-bottom: 2rem; text-align: center; }
-        .login-box {
-            background-color: var(--panel-bg); padding: 20px; border-radius: 10px;
-            border: 1px solid #333; width: 90%; max-width: 400px; box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-        }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #333; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #888; font-weight: bold; }
-        .tab.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); text-shadow: 0 0 5px var(--neon-blue); }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #ccc; }
-        .form-group input {
-            width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #333;
-            background-color: #111; color: var(--text-color); outline: none;
-        }
-        .form-group input:focus { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
-        
-        .btn {
-            width: 100%; padding: 12px; background-color: transparent; color: var(--neon-blue);
-            border: 2px solid var(--neon-blue); border-radius: 5px; font-weight: bold; font-size: 1rem;
-            cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .btn:hover, .btn:focus { background-color: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
-        .error-msg { color: #ff3333; font-size: 0.85rem; text-align: center; margin-top: 10px; display: none; }
-
-        /* TELA DO APP (APÓS LOGIN) */
-        #app-screen { display: none; height: 100vh; flex-direction: column; }
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; background-color: var(--panel-bg); border-bottom: 2px solid var(--neon-blue);
-        }
-        .nav-tabs { display: flex; gap: 10px; overflow-x: auto; }
-        .nav-btn {
-            background: none; border: 1px solid #333; color: #fff; padding: 8px 15px;
-            border-radius: 20px; cursor: pointer; white-space: nowrap;
-        }
-        .nav-btn:focus, .nav-btn.active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); outline: none; }
-        
-        main { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .category-title { font-size: 1.2rem; color: var(--neon-blue); margin-bottom: 10px; text-shadow: 0 0 5px var(--neon-blue); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
-        .card {
-            background-color: var(--panel-bg); border: 1px solid #333; border-radius: 8px;
-            overflow: hidden; cursor: pointer; text-align: center; transition: 0.2s;
-        }
-        .card:focus, .card:hover { border-color: var(--neon-blue); transform: scale(1.05); outline: none; box-shadow: 0 0 10px rgba(0,243,255,0.3); }
-        .card img { width: 100%; height: 150px; object-fit: cover; background-color: #222; }
-        .card p { padding: 8px; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* PLAYER DE VÍDEO */
-        #player-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000; z-index: 1000; flex-direction: column;
-        }
-        video { flex: 1; width: 100%; height: 100%; background: #000; outline: none; }
-        #close-player { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid var(--neon-blue); padding: 10px; border-radius: 5px; cursor: pointer; z-index: 1001;}
-        #close-player:focus { background: var(--neon-blue); color: #000; outline: none; }
-    </style>
-</head>
-<body>
-
-    <!-- TELA DE LOGIN -->
-    <div id="login-screen">
-        <div class="logo">KIRITO PLAYER</div>
-        <div class="login-box">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('xtream')" id="tab-xtream">Xtream Codes</div>
-                <div class="tab" onclick="switchTab('m3u')" id="tab-m3u">Lista M3U</div>
-            </div>
-
-            <!-- Form Xtream Codes -->
-            <div id="form-xtream">
-                <div class="form-group">
-                    <label>Servidor / DNS (ex: http://servidor.com:8080)</label>
-                    <input type="text" id="xc-server" placeholder="http://...">
-                </div>
-                <div class="form-group">
-                    <label>Usuário</label>
-                    <input type="text" id="xc-user">
-                </div>
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="xc-pass">
-                </div>
-                <button class="btn" onclick="loginXtream()">Entrar</button>
-            </div>
-
-            <!-- Form M3U -->
-            <div id="form-m3u" style="display: none;">
-                <div class="form-group">
-                    <label>URL da Lista M3U</label>
-                    <input type="text" id="m3u-url" placeholder="http://...">
-                </div>
-                <div class="form-group">
-                    <label>Ou carregar arquivo .m3u</label>
-                    <input type="file" id="m3u-file" accept=".m3u">
-                </div>
-                <button class="btn" onclick="loginM3U()">Conectar</button>
-            </div>
-
-            <div class="error-msg" id="login-error">Erro de conexão. Verifique os dados.</div>
-        </div>
-    </div>
-
-    <!-- TELA PRINCIPAL DO APP -->
-    <div id="app-screen">
-        <header>
-            <div class="logo" style="font-size: 1.2rem; margin: 0;">KIRITO</div>
-            <div class="nav-tabs">
-                <button class="nav-btn active" onclick="loadContent('live')" id="nav-live">TV ao Vivo</button>
-                <button class="nav-btn" onclick="loadContent('movies')" id="nav-movies">Filmes</button>
-                <button class="nav-btn" onclick="loadContent('series')" id="nav-series">Séries</button>
-                <button class="nav-btn" onclick="logout()" style="border-color: #ff3333; color: #ff3333;">Sair</button>
-            </div>
-        </header>
-        <main id="content-area">
-            <!-- O conteúdo será injetado aqui via JavaScript -->
-        </main>
-    </div>
-
-    <!-- PLAYER DE VÍDEO -->
-    <div id="player-modal">
-        <button id="close-player" onclick="closePlayer()">FECHAR [ESC]</button>
-        <video id="video-player" controls autoplay></video>
-    </div>
-
-    <script>
-        let currentApi = null; // 'xtream' ou 'm3u'
-        let xtreamData = {}; // Salva dados do login temporariamente na memória
-        let m3uData = []; // Salva lista M3U na memória
-
-        // --- NAVEGAÇÃO DE ABAS NO LOGIN ---
-        function switchTab(type) {
-            document.getElementById('tab-xtream').classList.remove('active');
-            document.getElementById('tab-m3u').classList.remove('active');
-            document.getElementById('form-xtream').style.display = 'none';
-            document.getElementById('form-m3u').style.display = 'none';
-            document.getElementById('login-error').style.display = 'none';
-
-            if(type === 'xtream') {
-                document.getElementById('tab-xtream').classList.add('active');
-                document.getElementById('form-xtream').style.display = 'block';
-            } else {
-                document.getElementById('tab-m3u').classList.add('active');
-                document.getElementById('form-m3u').style.display = 'block';
-            }
-        }
-
-        // --- LOGIN XTREAM CODES ---
-        async function loginXtream() {
-            const server = document.getElementById('xc-server').value.trim();
-            const user = document.getElementById('xc-user').value.trim();
-            const pass = document.getElementById('xc-pass').value.trim();
-
-            if(!server || !user || !pass) {
-                showError("Preencha todos os campos.");
-                return;
-            }
-
-            try {
-                // A API do Xtream usa esse endpoint para validar e puxar dados
-                const url = `${server}/player_api.php?username=${user}&password=${pass}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if(data.user_info && data.user_info.auth === 1) {
-                    currentApi = 'xtream';
-                    // Salva na memória da sessão (seguro, não fica no GitHub)
-                    xtreamData = { server, user, pass };
-                    sessionStorage.setItem('kirito_auth', JSON.stringify(xtreamData));
-                    
-                    showApp();
-                } else {
-                    showError("Usuário ou senha inválidos no servidor.");
-                }
-            } catch (err) {
-                console.error(err);
-                showError("Não foi possível conectar ao servidor. Verifique o DNS.");
-            }
-        }
-
-        // --- LOGIN M3U (Preservado e Melhorado) ---
-        function loginM3U() {
-            const fileInput = document.getElementById('m3u-file');
-            const urlInput = document.getElementById('m3u-url').value.trim();
-
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    parseM3U(e.target.result);
-                };
-                reader.readAsText(file);
-            } else if (urlInput) {
-                fetch(urlInput)
-                    .then(res => res.text())
-                    .then(text => parseM3U(text))
-                    .catch(() => showError("Erro ao baixar a lista M3U. Verifique a URL."));
-            } else {
-                showError("Insira uma URL ou selecione um arquivo M3U.");
-            }
-        }
-
-        function parseM3U(content) {
-            try {
-                const lines = content.split('\n');
-                let parsed = [];
-                let currentItem = {};
-
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i].trim();
-                    if (line.startsWith('#EXTINF:')) {
-                        const nameMatch = line.match(/,(.*)$/);
-                        const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-                        currentItem.name = nameMatch ? nameMatch[1] : "Sem Nome";
-                        currentItem.logo = logoMatch ? logoMatch[1] : "";
-                    } else if (line.startsWith('http')) {
-                        currentItem.url = line;
-                        if (currentItem.url) {
-                            parsed.push({ ...currentItem });
-                        }
-                        currentItem = {}; // Reset
-                    }
-                }
-
-                if (parsed.length === 0) throw new Error("Lista vazia");
-                
-                currentApi = 'm3u';
-                m3uData = parsed;
-                showApp();
-            } catch (err) {
-                showError("Arquivo M3U inválido.");
-            }
-        }
-
-        function showError(msg) {
-            const errDiv = document.getElementById('login-error');
-            errDiv.innerText = msg;
-            errDiv.style.display = 'block';
-        }
-
-        // --- MOSTRAR O APP APÓS LOGIN ---
-        function showApp() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-screen').style.display = 'flex';
-            loadContent('live'); // Carrega a TV ao vivo por padrão
-        }
-
-        function logout() {
-            sessionStorage.removeItem('kirito_auth');
-            location.reload(); // Recarrega a página para limpar tudo
-        }
-
-        // --- CARREGAR CONTEÚDOS (TV, FILMES, SÉRIES) ---
-        async function loadContent(type) {
-            // Atualiza visual dos botões do menu
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            if(document.getElementById(`nav-${type}`)) document.getElementById(`nav-${type}`).classList.add('active');
-            
-            const contentArea = document.getElementById('content-area');
-            contentArea.innerHTML = '<p style="text-align:center; margin-top:20px;">Carregando...</p>';
-
-            if (currentApi === 'xtream') {
-                loadXtreamContent(type, contentArea);
-            } else if (currentApi === 'm3u') {
-                loadM3UContent(type, contentArea);
-            }
-        }
-
-        async function loadXtreamContent(type, container) {
-            const { server, user, pass } = xtreamData;
-            let action = '';
-            if(type === 'live') action = 'get_live_categories';
-            if(type === 'movies') action = 'get_vod_categories';
-            if(type === 'series') action = 'get_series_categories';
-
-            try {
-                const res = await fetch(`${server}/player_api.php?username=${user}&password=${pass}&action=${action}`);
-                const categories = await res.json();
-                
-                container.innerHTML = ''; // Limpa
-                // Exemplo simplificado: Vamos mostrar apenas as categorias
-                // Em um app completo, ao clicar na categoria, faríamos outra chamada para puxar os canais/filmes
-                categories.forEach(cat => {
-                    const div = document.createElement('div');
-                    div.className = 'category-title';
-                    div.innerText = cat.category_name;
-                    container.appendChild(div);
-                    
-                    const grid = document.createElement('div');
-                    grid.className = 'grid';
-                    // Aqui entraria a lógica de listar os itens da categoria.
-                    // Para simplificar e mostrar que está funcionando, colocamos um card fake
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `<p>${cat.category_name}</p>`;
-                    grid.appendChild(card);
-                    container.appendChild(grid);
-                });
-
-            } catch (err) {
-                container.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar dados. Verifique sua conexão.</p>';
-            }
-        }
-
-        function loadM3UContent(type, container) {
-            container.innerHTML = '';
-            // Como a lista M3U é tudo junto, vamos separar por abas de forma simples aqui
-            const grid = document.createElement('div');
-            grid.className = 'grid';
-
-            // Exibindo os primeiros 50 itens da lista M3U para teste
-            m3uData.slice(0, 50).forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <img src="${item.logo || 'https://via.placeholder.com/150x150/000000/00f3ff?text=TV'}" alt="Logo">
-                    <p>${item.name}</p>
-                `;
-                card.onclick = () => playVideo(item.url);
-                grid.appendChild(card);
-            });
-
-            const title = document.createElement('h2');
-            title.innerText = type === 'live' ? 'Canais M3U' : 'Conteúdo M3U';
-            title.style.color = 'var(--neon-blue)';
-            container.appendChild(title);
-            container.appendChild(grid);
-        }
-
-        // --- PLAYER DE VÍDEO REAL (HLS) ---
-        function playVideo(url) {
-            const modal = document.getElementById('player-modal');
-            const video = document.getElementById('video-player');
-            
-            modal.style.display = 'flex';
-            
-            // Destrói player anterior se existir
-            if (window.hls) {
-                window.hls.destroy();
-            }
-
-            if (Hls.isSupported()) {
-                window.hls = new Hls();
-                window.hls.loadSource(url);
-                window.hls.attachMedia(video);
-                window.hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play();
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Fallback para Safari/iOS
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play();
-                });
-            }
-        }
-
-        function closePlayer() {
-            const modal = document.getElementById('player-modal');
-            const video = document.getElementById('video-player');
-            video.pause();
-            video.src = "";
-            if (window.hls) {
-                window.hls.destroy();
-            }
-            modal.style.display = 'none';
-        }
-
-        // Suporte a botão Voltar do controle remoto / teclado (ESC)
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closePlayer();
-            }
-        });
-    </script>
-</body>
-</html>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#02070d">
+<title>KIRITO PLAYER</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+:root{--bg:#020609;--panel:#09131d;--blue:#00d9ff;--blue2:#087bff;--text:#f4fbff;--muted:#91a8b8;--line:#153345;--danger:#ff526b}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#062235 0,#020609 52%);color:var(--text);font-family:Segoe UI,Arial,sans-serif;min-height:100vh}button,input{font:inherit}button{cursor:pointer}#login-screen{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px}.logo{font-size:clamp(2rem,7vw,3rem);font-weight:900;letter-spacing:3px;text-align:center;text-shadow:0 0 10px var(--blue),0 0 28px #0077ff;margin:0 0 22px}.sublogo{color:var(--muted);letter-spacing:4px;font-size:.72rem;text-align:center;margin-top:-14px;margin-bottom:22px}.login-box{width:min(100%,480px);padding:22px;background:linear-gradient(145deg,#0b1c29,#050b11);border:1px solid #14506a;border-radius:16px;box-shadow:0 0 32px #00cfff18}.tabs{display:flex;gap:8px;margin-bottom:18px}.tab{flex:1;border:1px solid var(--line);background:#06111a;color:var(--muted);padding:11px;border-radius:9px;font-weight:700}.tab.active{color:var(--blue);border-color:var(--blue);box-shadow:0 0 12px #00d9ff25}.form-group{margin:13px 0}.form-group label{display:block;color:#b8d1df;font-size:.88rem;margin-bottom:7px}.form-group input{width:100%;background:#02080d;border:1px solid #1c4053;border-radius:8px;color:white;padding:12px;outline:none}.form-group input:focus{border-color:var(--blue);box-shadow:0 0 8px #00d9ff30}.hint{color:var(--muted);font-size:.78rem;line-height:1.45;margin:8px 0}.btn{width:100%;border:1px solid var(--blue);background:linear-gradient(90deg,#063b52,#064b76);color:white;border-radius:9px;padding:13px;font-weight:800;margin-top:8px}.btn:focus,.btn:hover{box-shadow:0 0 18px #00d9ff50;outline:2px solid #8bf1ff}.error-msg{display:none;color:#ffd7dc;background:#45121d;border:1px solid #9e3446;border-radius:8px;padding:11px;margin-top:14px;font-size:.88rem;overflow-wrap:anywhere}.status{display:none;color:#b9efff;font-size:.85rem;margin-top:12px;text-align:center}#app-screen{display:none;min-height:100vh;flex-direction:column}header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 18px;background:#050d14ed;border-bottom:1px solid var(--blue);position:sticky;top:0;z-index:5}.brand{font-weight:900;letter-spacing:2px;color:var(--blue);text-shadow:0 0 9px #00d9ff}.nav-tabs{display:flex;gap:8px;overflow-x:auto}.nav-btn,.small-btn{border:1px solid var(--line);background:#07131d;color:white;padding:9px 13px;border-radius:20px;white-space:nowrap}.nav-btn.active,.nav-btn:focus,.small-btn:focus{border-color:var(--blue);color:var(--blue);outline:none}main{padding:18px;max-width:1500px;width:100%;margin:auto}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:15px}.toolbar input{background:#06111a;color:white;border:1px solid var(--line);padding:10px;border-radius:8px;min-width:190px;flex:1}.category-row{display:flex;gap:8px;overflow:auto;padding:5px 0 14px}.category-btn{background:#07131d;border:1px solid var(--line);color:#d8e9f2;border-radius:20px;padding:8px 13px;white-space:nowrap}.category-btn.active{border-color:var(--blue);color:var(--blue)}.section-title{color:var(--blue);font-size:1.15rem;margin:12px 0}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:13px}.card{background:linear-gradient(145deg,#0b1a26,#050b11);border:1px solid #17394c;border-radius:10px;overflow:hidden;cursor:pointer;min-width:0}.card:focus,.card:hover{outline:none;border-color:var(--blue);box-shadow:0 0 13px #00d9ff30;transform:translateY(-2px)}.card img{width:100%;height:125px;object-fit:contain;background:#02070b}.card .placeholder{height:125px;display:grid;place-items:center;color:var(--blue);font-size:2rem;background:radial-gradient(circle,#123247,#03080d)}.card p{padding:9px;margin:0;font-size:.86rem;font-weight:650;overflow-wrap:anywhere}.empty,.loading{color:var(--muted);padding:25px;text-align:center}.notice{background:#071722;border:1px solid #164258;padding:12px;border-radius:9px;color:#c4e8f6;line-height:1.5}#player-modal{display:none;position:fixed;inset:0;background:#000;z-index:20;flex-direction:column}#video-player{width:100%;height:100%;background:#000;flex:1}#close-player{position:absolute;top:12px;right:12px;z-index:21;background:#061522;color:white;border:1px solid var(--blue);border-radius:8px;padding:10px 15px}.player-error{position:absolute;bottom:55px;left:5%;right:5%;text-align:center;color:white;background:#40131d;padding:10px;border-radius:8px;display:none}@media(max-width:650px){header{align-items:flex-start;flex-direction:column}.nav-tabs{width:100%}.grid{grid-template-columns:repeat(auto-fill,minmax(115px,1fr))}.card img,.card .placeholder{height:105px}}
+</style></head><body>
+<div id="login-screen"><div class="logo">KIRITO PLAYER</div><div class="sublogo">NEXT GENERATION MEDIA</div><div class="login-box">
+<div class="tabs"><button class="tab active" id="tab-xtream" onclick="switchTab('xtream')">XTREAM CODES</button><button class="tab" id="tab-m3u" onclick="switchTab('m3u')">LISTA M3U</button></div>
+<div id="form-xtream">
+<div class="form-group"><label for="xc-server">Servidor / DNS</label><input id="xc-server" type="url" value="http://novodoaura.com" placeholder="http://servidor.com:8080"></div>
+<div class="form-group"><label for="xc-user">Usuário</label><input id="xc-user" autocomplete="username"></div><div class="form-group"><label for="xc-pass">Senha</label><input id="xc-pass" type="password" autocomplete="current-password"></div>
+<div class="form-group"><label for="worker-url">URL do Cloudflare Worker (após publicar)</label><input id="worker-url" type="url" placeholder="https://seu-worker.seu-subdominio.workers.dev"></div>
+<p class="hint">O Worker é necessário quando o navegador bloqueia a API HTTP por segurança/CORS. Deixe vazio apenas para testar conexão direta. Não coloque usuário ou senha no campo do Worker.</p>
+<button class="btn" onclick="loginXtream()">CONECTAR</button></div>
+<div id="form-m3u" style="display:none"><div class="form-group"><label for="m3u-url">URL da lista M3U</label><input id="m3u-url" type="url" placeholder="Cole o endereço M3U"></div><div class="form-group"><label for="m3u-file">Ou selecione um arquivo .m3u</label><input id="m3u-file" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl"></div><div class="form-group"><label for="m3u-worker-url">URL do Cloudflare Worker (opcional)</label><input id="m3u-worker-url" type="url" placeholder="https://seu-worker.seu-subdominio.workers.dev"></div><p class="hint">Para URL M3U do domínio novodoaura.com, o Worker pode encaminhar get.php. Arquivos M3U locais não precisam dele.</p><button class="btn" onclick="loginM3U()">CARREGAR LISTA</button></div>
+<div class="error-msg" id="login-error" role="alert"></div><div class="status" id="login-status" aria-live="polite"></div></div></div>
+<div id="app-screen"><header><div class="brand">KIRITO PLAYER</div><div class="nav-tabs"><button class="nav-btn active" id="nav-live" onclick="loadContent('live')">TV AO VIVO</button><button class="nav-btn" id="nav-movies" onclick="loadContent('movies')">FILMES</button><button class="nav-btn" id="nav-series" onclick="loadContent('series')">SÉRIES</button><button class="nav-btn" onclick="logout()">SAIR</button></div></header><main id="content-area"></main></div>
+<div id="player-modal"><button id="close-player" onclick="closePlayer()">FECHAR ✕</button><video id="video-player" controls autoplay playsinline></video><div id="player-error" class="player-error"></div></div>
+<script>
+let currentApi=null,xtreamData={},m3uData=[],activeType='live',activeCategory='all',allItems=[],hlsInstance=null;
+const $=id=>document.getElementById(id);
+function switchTab(type){$('tab-xtream').classList.toggle('active',type==='xtream');$('tab-m3u').classList.toggle('active',type==='m3u');$('form-xtream').style.display=type==='xtream'?'block':'none';$('form-m3u').style.display=type==='m3u'?'block':'none';hideError();}
+function showError(msg){$('login-error').textContent=msg;$('login-error').style.display='block';$('login-status').style.display='none';}
+function hideError(){$('login-error').style.display='none';}
+function setStatus(msg){$('login-status').textContent=msg;$('login-status').style.display='block';hideError();}
+function normalizeServer(s){return s.trim().replace(/\/+$/,'');}
+function normalizeWorker(s){return s.trim().replace(/\/+$/,'');}
+function endpointUrl(endpoint,params={}){
+ const query=new URLSearchParams(params).toString();
+ const base=xtreamData.worker?xtreamData.worker:xtreamData.server;
+ return `${base}/${endpoint}${query?'?'+query:''}`;
+}
+async function requestJson(endpoint,params={}){
+ const url=endpointUrl(endpoint,params);
+ let res;
+ try{res=await fetch(url,{method:'GET',cache:'no-store'});}catch(e){throw new Error(xtreamData.worker?'Não foi possível alcançar o Cloudflare Worker. Confira a URL publicada e as configurações CORS.':'Falha de rede/CORS. Como o player está em HTTPS e o servidor usa HTTP, o navegador pode bloquear a API. Publique o Worker Cloudflare e informe sua URL.');}
+ if(!res.ok)throw new Error(`Servidor respondeu HTTP ${res.status} (${endpoint}).`);
+ const text=await res.text();let data;try{data=JSON.parse(text);}catch{throw new Error('A API respondeu, mas não retornou JSON válido. Verifique o endereço do servidor e a API Xtream.');}
+ if(data&&data.user_info&&String(data.user_info.auth)==='0')throw new Error('Usuário ou senha recusados pelo servidor.');
+ return data;
+}
+async function loginXtream(){
+ hideError();const server=normalizeServer($('xc-server').value),user=$('xc-user').value.trim(),pass=$('xc-pass').value.trim(),worker=normalizeWorker($('worker-url').value);
+ if(!server||!user||!pass){showError('Preencha servidor, usuário e senha.');return;}
+ try{const u=new URL(server);if(!['http:','https:'].includes(u.protocol))throw new Error();}catch{showError('Endereço do servidor inválido. Use http:// ou https://.');return;}
+ if(worker){try{const w=new URL(worker);if(w.protocol!=='https:')throw new Error();}catch{showError('A URL do Cloudflare Worker precisa ser HTTPS e completa.');return;}}
+ xtreamData={server,user,pass,worker};setStatus('Testando conexão com o servidor...');
+ try{const data=await requestJson('player_api.php',{username:user,password:pass});if(!data||!data.user_info||String(data.user_info.auth)!=='1')throw new Error('O servidor não confirmou o login. Confira usuário e senha.');currentApi='xtream';sessionStorage.setItem('kirito_auth',JSON.stringify(xtreamData));showApp();}
+ catch(e){showError(e.message||'Falha inesperada ao conectar.');}
+}
+async function loginM3U(){hideError();const file=$('m3u-file').files[0],url=$('m3u-url').value.trim(),worker=normalizeWorker($('m3u-worker-url').value);if(file){const reader=new FileReader();reader.onload=e=>parseM3U(e.target.result);reader.onerror=()=>showError('Não foi possível ler o arquivo M3U.');reader.readAsText(file);return;}if(!url){showError('Cole uma URL M3U ou selecione um arquivo.');return;}try{setStatus('Baixando lista M3U...');let fetchUrl=url;if(worker){const w=new URL(worker),m=new URL(url);if(w.protocol!=='https:')throw new Error('A URL do Worker precisa usar HTTPS.');if(m.hostname.toLowerCase()==='novodoaura.com'&&m.pathname==='/get.php'){fetchUrl=worker+'/get.php'+m.search;}}const res=await fetch(fetchUrl,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);parseM3U(await res.text());}catch(e){showError(e.message||'Não foi possível baixar a M3U. Pode ser bloqueio CORS/HTTP. Tente importar o arquivo M3U ou use o Worker configurado para o domínio do provedor.');}}
+function parseM3U(content){try{const lines=content.replace(/^\uFEFF/,'').split(/\r?\n/);let parsed=[],item=null;for(const raw of lines){const line=raw.trim();if(line.startsWith('#EXTINF:')){const name=(line.match(/,(.*)$/)||[])[1]||'Sem nome';const logo=(line.match(/tvg-logo="([^"]*)"/i)||[])[1]||'';const group=(line.match(/group-title="([^"]*)"/i)||[])[1]||'Sem categoria';item={name:name.trim(),logo,group};}else if(line&&!line.startsWith('#')&&/^https?:\/\//i.test(line)){if(item)parsed.push({...item,url:line});else parsed.push({name:'Canal '+(parsed.length+1),logo:'',group:'Sem categoria',url:line});item=null;}}if(!parsed.length)throw new Error('Nenhum item encontrado');m3uData=parsed;currentApi='m3u';showApp();}catch(e){showError('M3U inválida ou sem entradas de mídia. Confira se o arquivo contém #EXTINF e URLs.');}}
+function showApp(){$('login-screen').style.display='none';$('app-screen').style.display='flex';loadContent('live');}
+function logout(){sessionStorage.removeItem('kirito_auth');currentApi=null;xtreamData={};m3uData=[];location.reload();}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadContent(type){activeType=type;activeCategory='all';document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));if($('nav-'+type))$('nav-'+type).classList.add('active');const c=$('content-area');c.innerHTML='<div class="loading">Carregando conteúdo...</div>';if(currentApi==='m3u'){renderM3U(type,c);return;}if(currentApi==='xtream'){await loadXtreamContent(type,c);}}
+async function loadXtreamContent(type,container){try{const categoryAction=type==='live'?'get_live_categories':type==='movies'?'get_vod_categories':'get_series_categories';const itemAction=type==='live'?'get_live_streams':type==='movies'?'get_vod_streams':'get_series';const [cats,items]=await Promise.all([requestJson('player_api.php',{username:xtreamData.user,password:xtreamData.pass,action:categoryAction}),requestJson('player_api.php',{username:xtreamData.user,password:xtreamData.pass,action:itemAction})]);if(!Array.isArray(items))throw new Error('A API não retornou a lista de conteúdos esperada.');allItems=items;renderXtream(type,Array.isArray(cats)?cats:[],items,container);}catch(e){container.innerHTML=`<div class="notice">${escapeHtml(e.message)}<br><br>Se o login funciona mas o catálogo não carrega, confira se o servidor permite as ações da API Xtream.</div>`;}}
+function renderXtream(type,cats,items,container){container.innerHTML='';const title=document.createElement('h2');title.className='section-title';title.textContent=type==='live'?'TV AO VIVO':type==='movies'?'FILMES':'SÉRIES';container.appendChild(title);const row=document.createElement('div');row.className='category-row';const addCat=(id,name)=>{const b=document.createElement('button');b.className='category-btn'+(String(activeCategory)===String(id)?' active':'');b.textContent=name;b.onclick=()=>{activeCategory=String(id);renderXtream(type,cats,items,container);};row.appendChild(b);};addCat('all','Todos');cats.forEach(c=>addCat(c.category_id,c.category_name));container.appendChild(row);const filtered=activeCategory==='all'?items:items.filter(x=>String(x.category_id)===activeCategory);const grid=document.createElement('div');grid.className='grid';filtered.forEach(item=>{const card=document.createElement('div');card.className='card';card.tabIndex=0;const name=item.name||item.title||'Sem título';const logo=item.stream_icon||item.cover||item.movie_image||'';card.innerHTML=(logo?`<img loading="lazy" src="${escapeHtml(logo)}" onerror="this.style.display='none'">`:'<div class="placeholder">✦</div>')+`<p>${escapeHtml(name)}</p>`;const open=()=>type==='series'?openSeries(item):playXtreamItem(item,type);card.onclick=open;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}};grid.appendChild(card);});container.appendChild(grid);if(!filtered.length){const p=document.createElement('p');p.className='empty';p.textContent='Nenhum conteúdo encontrado nesta categoria.';container.appendChild(p);}}
+function renderM3U(type,container){container.innerHTML='';const title=document.createElement('h2');title.className='section-title';title.textContent=type==='live'?'CANAIS M3U':'CONTEÚDO DA LISTA M3U';container.appendChild(title);const groups=[...new Set(m3uData.map(x=>x.group||'Sem categoria'))];const row=document.createElement('div');row.className='category-row';const add=(g)=>{const b=document.createElement('button');b.className='category-btn'+(activeCategory===g?' active':'');b.textContent=g;b.onclick=()=>{activeCategory=g;renderM3U(type,container);};row.appendChild(b);};add('all');groups.forEach(add);container.appendChild(row);const list=activeCategory==='all'?m3uData:m3uData.filter(x=>(x.group||'Sem categoria')===activeCategory);const grid=document.createElement('div');grid.className='grid';list.forEach(item=>{const card=document.createElement('div');card.className='card';card.tabIndex=0;card.innerHTML=(item.logo?`<img loading="lazy" src="${escapeHtml(item.logo)}" onerror="this.style.display='none'">`:'<div class="placeholder">✦</div>')+`<p>${escapeHtml(item.name)}</p>`;card.onclick=()=>playVideo(item.url);card.onkeydown=e=>{if(e.key==='Enter'){playVideo(item.url);}};grid.appendChild(card);});container.appendChild(grid);}
+function playXtreamItem(item,type){const ext=(item.container_extension|| (type==='live'?'ts':'mp4')).replace(/^\./,'');const folder=type==='live'?'live':'movie';const url=`${xtreamData.server}/${folder}/${encodeURIComponent(xtreamData.user)}/${encodeURIComponent(xtreamData.pass)}/${item.stream_id}.${ext}`;playVideo(url);}
+async function openSeries(series){const c=$('content-area');c.innerHTML='<div class="loading">Carregando episódios...</div>';try{const data=await requestJson('player_api.php',{username:xtreamData.user,password:xtreamData.pass,action:'get_series_info',series_id:series.series_id});const episodes=data.episodes||{};c.innerHTML='';const back=document.createElement('button');back.className='small-btn';back.textContent='← Voltar às séries';back.onclick=()=>loadContent('series');c.appendChild(back);const h=document.createElement('h2');h.className='section-title';h.textContent=series.name||'Episódios';c.appendChild(h);let count=0;Object.keys(episodes).sort((a,b)=>Number(a)-Number(b)).forEach(season=>{const sh=document.createElement('h3');sh.className='section-title';sh.textContent='Temporada '+season;c.appendChild(sh);const grid=document.createElement('div');grid.className='grid';(episodes[season]||[]).forEach(ep=>{count++;const card=document.createElement('div');card.className='card';card.tabIndex=0;card.innerHTML='<div class="placeholder">▶</div><p>'+escapeHtml(ep.title||ep.name||('Episódio '+ep.id))+'</p>';const play=()=>{const ext=(ep.container_extension||'mp4').replace(/^\./,'');playVideo(`${xtreamData.server}/series/${encodeURIComponent(xtreamData.user)}/${encodeURIComponent(xtreamData.pass)}/${ep.id}.${ext}`);};card.onclick=play;card.onkeydown=e=>{if(e.key==='Enter')play();};grid.appendChild(card);});c.appendChild(grid);});if(!count)c.insertAdjacentHTML('beforeend','<p class="empty">Nenhum episódio retornado pelo servidor.</p>');}catch(e){c.innerHTML=`<div class="notice">Não foi possível carregar os episódios: ${escapeHtml(e.message)}</div>`;}}
+function playVideo(url){const modal=$('player-modal'),video=$('video-player'),err=$('player-error');err.style.display='none';modal.style.display='flex';if(hlsInstance){hlsInstance.destroy();hlsInstance=null;}video.pause();video.removeAttribute('src');video.load();if(/\.m3u8($|\?)/i.test(url)&&window.Hls&&Hls.isSupported()){hlsInstance=new Hls({enableWorker:true});hlsInstance.loadSource(url);hlsInstance.attachMedia(video);hlsInstance.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal){err.textContent='Falha ao reproduzir o vídeo. O servidor pode bloquear a reprodução no navegador ou exigir outro formato.';err.style.display='block';}});}else{video.src=url;video.play().catch(()=>{err.textContent='O navegador não conseguiu iniciar este formato de vídeo. A compatibilidade depende do formato e do servidor.';err.style.display='block';});}}
+function closePlayer(){const video=$('video-player');video.pause();video.removeAttribute('src');video.load();if(hlsInstance){hlsInstance.destroy();hlsInstance=null;}$('player-modal').style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePlayer();});
+// Retoma a sessão somente nesta aba; credenciais não são gravadas no repositório.
+try{const saved=sessionStorage.getItem('kirito_auth');if(saved){xtreamData=JSON.parse(saved);if(xtreamData&&xtreamData.server&&xtreamData.user&&xtreamData.pass){currentApi='xtream';$('xc-server').value=xtreamData.server;$('xc-user').value=xtreamData.user;$('xc-pass').value=xtreamData.pass;$('worker-url').value=xtreamData.worker||'';showApp();}}}catch(e){sessionStorage.removeItem('kirito_auth');}
+</script></body></html>
